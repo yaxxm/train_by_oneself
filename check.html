@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据校验 - 模型微调</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .back-btn {
+            padding: 8px 16px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #f5222d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .check-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .check-title {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .check-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .check-info p {
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .check-info strong {
+            color: #333;
+        }
+
+        .check-summary {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .check-summary.success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+        }
+
+        .check-summary.warning {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+        }
+
+        .check-summary.error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+        }
+
+        .check-summary h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .check-summary ul {
+            padding-left: 20px;
+        }
+
+        .check-summary li {
+            margin-bottom: 5px;
+        }
+
+        .check-table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .check-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .check-table th, .check-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .check-table th {
+            background-color: #f5f5f5;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .check-table tr:hover {
+            background-color: #f0f7ff;
+        }
+
+        .check-table .status-icon {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .check-table .status-icon.success {
+            color: #52c41a;
+        }
+
+        .check-table .status-icon.warning {
+            color: #faad14;
+        }
+
+        .check-table .status-icon.error {
+            color: #f5222d;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination button:hover {
+            color: #1890ff;
+            border-color: #1890ff;
+        }
+
+        .pagination button.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .pagination button:disabled {
+            color: #d9d9d9;
+            cursor: not-allowed;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .start-training-btn {
+            padding: 12px 20px;
+            background: #52c41a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .start-training-btn:hover {
+            background: #73d13d;
+        }
+
+        .start-training-btn:disabled {
+            background: #b7eb8f;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn {
+            padding: 12px 20px;
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #d9d9d9;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .cancel-btn:hover {
+            background: #e6e6e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>大模型指令微调系统</h1>
+        <div class="header-buttons">
+            <button class="back-btn" id="backBtn">返回上传</button>
+            <button class="logout-btn" id="logoutBtn">退出登录</button>
+        </div>
+    </div>
+
+    <div class="check-container">
+        <div class="check-title">
+            <h2>数据校验结果</h2>
+            <div id="modelBadge" style="padding: 5px 10px; background: #e6f7ff; color: #1890ff; border-radius: 4px; font-size: 14px;">
+                选择的模型: <strong id="modelName">加载中...</strong>
+            </div>
+        </div>
+
+        <div class="check-info">
+            <p><strong>文件名:</strong> <span id="fileName">加载中...</span></p>
+            <p><strong>数据条数:</strong> <span id="dataCount">加载中...</span></p>
+            <p><strong>训练ID:</strong> <span id="trainId">加载中...</span></p>
+        </div>
+
+        <div id="checkSummary" class="check-summary">
+            <h3>校验结果摘要</h3>
+            <div id="summaryContent">加载中...</div>
+        </div>
+
+        <div class="check-table-container">
+            <table class="check-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">序号</th>
+                        <th style="width: 40%;">输入文本 (text)</th>
+                        <th style="width: 40%;">期望输出 (result)</th>
+                        <th style="width: 15%;">校验结果</th>
+                    </tr>
+                </thead>
+                <tbody id="checkTableBody">
+                    <tr>
+                        <td colspan="4" style="text-align: center;">加载数据中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="pagination">
+            <!-- 分页按钮将通过JavaScript动态生成 -->
+        </div>
+
+        <div class="action-buttons">
+            <button class="start-training-btn" id="startTrainingBtn" disabled>开始训练</button>
+            <button class="cancel-btn" id="cancelBtn">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 获取训练ID和模型类型
+        const trainId = getUrlParam('trainId');
+        const modelType = getUrlParam('model');
+        
+        // 如果没有trainId，重定向回上传页面
+        if (!trainId) {
+            window.location.href = '/upload';
+        }
+
+        // 模型名称映射
+        const modelNames = {
+            'glm4': 'GLM4',
+            'medical': '医学专用大模型',
+            'legal': '法律专用大模型',
+            'developing': '模型正在开发中'
+        };
+
+        // 设置模型名称
+        document.getElementById('modelName').textContent = modelNames[modelType] || '未知模型';
+
+        // 页面加载时获取数据集信息
+        window.addEventListener('DOMContentLoaded', function() {
+            // 设置训练ID
+            document.getElementById('trainId').textContent = trainId;
+            
+            // 获取数据集信息和校验结果
+            fetch(`/api/check_dataset/${trainId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新数据集信息
+                        document.getElementById('fileName').textContent = data.fileName;
+                        document.getElementById('dataCount').textContent = data.totalRows;
+                        
+                        // 更新校验摘要
+                        updateCheckSummary(data.checkSummary);
+                        
+                        // 渲染数据表格
+                        renderCheckTable(data.data);
+                        
+                        // 渲染分页
+                        renderPagination(data.currentPage, data.totalPages);
+                        
+                        // 根据校验结果决定是否启用训练按钮
+                        document.getElementById('startTrainingBtn').disabled = !data.checkSummary.canTrain;
+                    } else {
+                        alert('获取数据校验结果失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取数据校验结果失败，请稍后重试');
+                });
+        });
+
+        // 更新校验摘要
+        function updateCheckSummary(summary) {
+            const summaryDiv = document.getElementById('checkSummary');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            if (summary.status === 'success') {
+                summaryDiv.className = 'check-summary success';
+                summaryContent.innerHTML = `
+                    <p>✅ 数据校验通过，共 ${summary.totalRows} 条数据全部符合要求。</p>
+                    <p>您可以点击"开始训练"按钮开始模型微调。</p>
+                `;
+            } else if (summary.status === 'warning') {
+                summaryDiv.className = 'check-summary warning';
+                summaryContent.innerHTML = `
+                    <p>⚠️ 数据校验完成，但存在以下问题：</p>
+                    <ul>
+                        ${summary.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                    </ul>
+                    <p>您仍然可以继续训练，但可能会影响模型效果。</p>
+                `;
+            } else {
+                summaryDiv.className = 'check-summary error';
+                summaryContent.innerHTML = `
+                    <p>❌ 数据校验失败，存在以下错误：</p>
+                    <ul>
+                        ${summary.errors.map(error => `<li>${error}</li>`).join('')}
+                    </ul>
+                    <p>请修正数据后重新上传。</p>
+                `;
+            }
+        }
+
+        // 渲染数据表格
+        function renderCheckTable(data) {
+            const tableBody = document.getElementById('checkTableBody');
+            tableBody.innerHTML = '';
+            
+            if (data.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4" style="text-align: center;">没有数据</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                
+                // 根据校验状态设置图标和提示
+                let statusIcon, statusText;
+                if (item.status === 'success') {
+                    statusIcon = '<span class="status-icon success">✓</span>';
+                    statusText = '符合要求';
+                } else if (item.status === 'warning') {
+                    statusIcon = '<span class="status-icon warning">⚠</span>';
+                    statusText = item.message || '警告';
+                } else {
+                    statusIcon = '<span class="status-icon error">✗</span>';
+                    statusText = item.message || '错误';
+                }
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(item.text)}</td>
+                    <td>${escapeHtml(item.result)}</td>
+                    <td>${statusIcon} ${statusText}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // HTML转义函数，防止XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 渲染分页
+        function renderPagination(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            // 上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '上一页';
+            prevButton.disabled = currentPage <= 1;
+            prevButton.addEventListener('click', () => changePage(currentPage - 1));
+            pagination.appendChild(prevButton);
+            
+            // 页码按钮
+            const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+            
+            if (endPage - startPage + 1 < maxButtons) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = i === currentPage ? 'active' : '';
+                pageButton.addEventListener('click', () => changePage(i));
+                pagination.appendChild(pageButton);
+            }
+            
+            // 下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '下一页';
+            nextButton.disabled = currentPage >= totalPages;
+            nextButton.addEventListener('click', () => changePage(currentPage + 1));
+            pagination.appendChild(nextButton);
+        }
+
+        // 切换页面
+        function changePage(page) {
+            // 获取数据集信息
+            fetch(`/api/check_dataset/${trainId}?page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 渲染数据表格
+                        renderCheckTable(data.data);
+                        
+                        // 渲染分页
+                        renderPagination(data.currentPage, data.totalPages);
+                    } else {
+                        alert('获取数据集失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取数据集失败，请稍后重试');
+                });
+        }
+
+        // 开始训练按钮点击事件
+        document.getElementById('startTrainingBtn').addEventListener('click', function() {
+            if (confirm('确定要开始训练吗？训练过程可能需要较长时间。')) {
+                fetch(`/api/start_training/${trainId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('训练已开始！您可以在训练状态页面查看进度。');
+                        // 跳转到训练状态页面
+                        window.location.href = `/training_status?trainId=${trainId}`;
+                    } else {
+                        alert('开始训练失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('开始训练失败，请稍后重试');
+                });
+            }
+        });
+
+        // 取消按钮点击事件
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            if (confirm('确定要取消吗？已上传的数据将被丢弃。')) {
+                fetch(`/api/cancel_training/${trainId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('已取消训练！');
+                        // 返回上传页面
+                        window.location.href = '/upload';
+                    } else {
+                        alert('取消失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('取消失败，请稍后重试');
+                });
+            }
+        });
+
+        // 返回按钮点击事件
+        document.getElementById('backBtn').addEventListener('click', function() {
+            window.location.href = '/upload';
+        });
+
+        // 退出登录按钮点击事件
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            fetch('/api/logout', {
+                method: 'POST'
+            })
+            .then(() => {
+                window.location.href = '/login';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.location.href = '/login';
+            });
+        });
+    </script>
+</body>
+</html>

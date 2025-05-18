@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型微调 - 上传数据</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #f5222d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .upload-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .upload-title {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .upload-description {
+            margin-bottom: 20px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .file-requirements {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .file-requirements h3 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .file-requirements ul {
+            padding-left: 20px;
+            color: #666;
+        }
+
+        .file-requirements li {
+            margin-bottom: 5px;
+        }
+
+        .upload-form {
+            margin-top: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .model-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .model-option {
+            flex: 1;
+            min-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .model-option:hover {
+            border-color: #1890ff;
+            background: #f0f7ff;
+        }
+
+        .model-option.selected {
+            border-color: #1890ff;
+            background: #e6f7ff;
+        }
+
+        .model-option.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #1890ff;
+            font-weight: bold;
+        }
+
+        .model-option h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .model-option p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .file-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: #e6f7ff;
+            border: 2px dashed #1890ff;
+            border-radius: 5px;
+            text-align: center;
+            color: #1890ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #bae7ff;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .selected-file {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .upload-btn {
+            padding: 12px 20px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #40a9ff;
+        }
+
+        .upload-btn:disabled {
+            background: #bfbfbf;
+            cursor: not-allowed;
+        }
+
+        .status-container {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .status-container.success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+
+        .status-container.error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+
+        .status-container.loading {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #e9e9e9;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #1890ff;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>大模型指令微调系统</h1>
+        <button class="logout-btn" id="logoutBtn">退出登录</button>
+    </div>
+
+    <div class="upload-container">
+        <h2 class="upload-title">上传训练数据</h2>
+        <p class="upload-description">
+            请上传包含指令微调数据的CSV文件，系统将使用这些数据对大模型进行微调训练。
+        </p>
+
+        <div class="file-requirements">
+            <h3>文件要求：</h3>
+            <ul>
+                <li>文件格式必须为CSV</li>
+                <li>CSV文件必须包含两列：text（输入文本）和result（期望输出）</li>
+                <li>文件大小不超过50MB</li>
+                <li>建议数据量在100-1000条之间以获得较好的微调效果</li>
+            </ul>
+        </div>
+        
+        <div class="training-info" style="display:none;">
+            <h3>训练状态：</h3>
+            <div class="status-container">
+                <p>训练ID: <span id="trainId"></span></p>
+                <p>状态: <span id="trainStatus">已上传</span></p>
+                <p>模型类型: <span id="modelType"></span></p>
+                <p>文件名: <span id="fileName"></span></p>
+                <div id="errorInfo" style="display:none;" class="error-info">
+                    <p>错误信息: <span id="errorMessage"></span></p>
+                </div>
+                <div id="successInfo" style="display:none;" class="success-info">
+                    <p>训练完成时间: <span id="endTime"></span></p>
+                    <p>模型保存路径: <span id="checkpointDir"></span></p>
+                </div>
+            </div>
+            <button id="startTrainingBtn" class="btn btn-primary">开始训练</button>
+            <button id="checkStatusBtn" class="btn btn-info">刷新状态</button>
+        </div>
+
+        <form id="uploadForm" class="upload-form">
+            <div class="form-group">
+                <label>选择微调模型：</label>
+                <div class="model-selection">
+                    <div class="model-option" data-model="glm4">
+                        <h4>GLM4</h4>
+                        <p>通用大模型，适用于多种场景的指令微调</p>
+                    </div>
+                    <div class="model-option" data-model="medical">
+                        <h4>医学专用大模型</h4>
+                        <p>针对医疗健康领域优化，适合医学知识问答</p>
+                    </div>
+                    <div class="model-option" data-model="legal">
+                        <h4>法律专用大模型</h4>
+                        <p>针对法律领域优化，适合法律咨询和文书生成</p>
+                    </div>
+                    <div class="model-option" data-model="developing">
+                        <h4>模型正在开发中</h4>
+                        <p>更多专业领域模型即将推出，敬请期待</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="file-input-container">
+                <label for="csvFile" class="file-input-label">
+                    <i class="upload-icon"></i>
+                    点击或拖拽CSV文件到此处
+                </label>
+                <input type="file" id="csvFile" class="file-input" accept=".csv" required>
+            </div>
+
+            <div id="selectedFile" class="selected-file">
+                未选择文件
+            </div>
+
+            <button type="submit" id="uploadBtn" class="upload-btn" disabled>数据校验</button>
+        </form>
+
+        <div id="statusContainer" class="status-container">
+            <div id="statusMessage">处理中...</div>
+            <div class="progress-bar">
+                <div id="progressBarFill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模型选择处理
+        const modelOptions = document.querySelectorAll('.model-option');
+        let selectedModel = null;
+        const trainingInfo = document.querySelector('.training-info');
+        const startTrainingBtn = document.getElementById('startTrainingBtn');
+        const checkStatusBtn = document.getElementById('checkStatusBtn');
+        let currentTrainId = null; // 当前训练ID
+
+        modelOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除其他选项的选中状态
+                modelOptions.forEach(opt => opt.classList.remove('selected'));
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+                // 保存选中的模型
+                selectedModel = this.getAttribute('data-model');
+                // 检查是否可以启用上传按钮
+                checkUploadButton();
+            });
+        });
+
+        // 文件选择处理
+        const fileInput = document.getElementById('csvFile');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const statusContainer = document.getElementById('statusContainer');
+        const statusMessage = document.getElementById('statusMessage');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                
+                // 检查文件类型
+                if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+                    alert('请上传CSV格式的文件');
+                    this.value = '';
+                    selectedFileDiv.style.display = 'none';
+                    checkUploadButton();
+                    return;
+                }
+                
+                // 检查文件大小
+                if (file.size > 50 * 1024 * 1024) { // 50MB
+                    alert('文件大小不能超过50MB');
+                    this.value = '';
+                    selectedFileDiv.style.display = 'none';
+                    checkUploadButton();
+                    return;
+                }
+                
+                selectedFileDiv.textContent = `已选择: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                selectedFileDiv.style.display = 'block';
+                checkUploadButton();
+            } else {
+                selectedFileDiv.style.display = 'none';
+                checkUploadButton();
+            }
+        });
+
+        // 检查是否可以启用上传按钮
+        function checkUploadButton() {
+            uploadBtn.disabled = !(selectedModel && fileInput.files.length > 0);
+        }
+
+        // 表单提交处理
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!selectedModel) {
+                alert('请选择微调模型');
+                return;
+            }
+            
+            if (!fileInput.files.length) {
+                alert('请选择CSV文件');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('model', selectedModel);
+            
+            // 显示上传状态
+            statusContainer.className = 'status-container loading';
+            statusMessage.textContent = '正在上传文件...';
+            statusContainer.style.display = 'block';
+            uploadBtn.disabled = true;
+            
+            // 模拟进度条
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress > 90) {
+                    clearInterval(progressInterval);
+                }
+                progressBarFill.style.width = `${progress}%`;
+            }, 500);
+            
+            // 发送文件到后端
+            fetch('http://localhost:5000/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                
+                if (data.success) {
+                    progressBarFill.style.width = '100%';
+                    statusContainer.className = 'status-container success';
+                    statusMessage.textContent = `文件上传成功，数据校验通过！`;
+                    
+                    // 保存训练ID并显示训练信息区域
+                    currentTrainId = data.trainId;
+                    document.getElementById('trainId').textContent = currentTrainId;
+                    document.getElementById('modelType').textContent = getModelName(selectedModel);
+                    document.getElementById('fileName').textContent = file.name;
+                    
+                    // 显示训练信息区域
+                    trainingInfo.style.display = 'block';
+                    
+                    // 隐藏上传表单
+                    uploadForm.style.display = 'none';
+                } else {
+                    statusContainer.className = 'status-container error';
+                    statusMessage.textContent = '上传失败: ' + data.message;
+                    uploadBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Error:', error);
+                statusContainer.className = 'status-container error';
+                statusMessage.textContent = '上传失败，请稍后重试';
+                uploadBtn.disabled = false;
+            });
+        });
+
+        // 获取模型名称
+        function getModelName(modelCode) {
+            const modelNames = {
+                'glm4': 'GLM4',
+                'medical': '医学专用大模型',
+                'legal': '法律专用大模型',
+                'developing': '开发中的模型'
+            };
+            return modelNames[modelCode] || '未知模型';
+        }
+
+        // 退出登录
+        logoutBtn.addEventListener('click', function() {
+            // 清除登录状态
+            fetch('http://localhost:5000/api/logout', {
+                method: 'POST'
+            })
+            .then(() => {
+                window.location.href = 'http://localhost:5000/login';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.location.href = 'http://localhost:5000/login';
+            });
+        });
+        
+        // 开始训练按钮事件
+        if (startTrainingBtn) {
+            startTrainingBtn.addEventListener('click', function() {
+                if (!currentTrainId) {
+                    alert('没有可用的训练任务');
+                    return;
+                }
+                
+                // 禁用按钮，防止重复点击
+                startTrainingBtn.disabled = true;
+                startTrainingBtn.textContent = '训练启动中...';
+                
+                // 发送训练请求
+                fetch(`/api/train/${currentTrainId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('训练任务已启动！');
+                        document.getElementById('trainStatus').textContent = '训练中';
+                        startTrainingBtn.textContent = '训练进行中';
+                        // 自动查询一次状态
+                        setTimeout(checkTrainingStatus, 2000);
+                    } else {
+                        alert('启动训练失败：' + data.message);
+                        startTrainingBtn.disabled = false;
+                        startTrainingBtn.textContent = '开始训练';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('启动训练失败：网络错误');
+                    startTrainingBtn.disabled = false;
+                    startTrainingBtn.textContent = '开始训练';
+                });
+            });
+        }
+        
+        // 查询训练状态按钮事件
+        if (checkStatusBtn) {
+            checkStatusBtn.addEventListener('click', checkTrainingStatus);
+        }
+        
+        // 查询训练状态函数
+        function checkTrainingStatus() {
+            if (!currentTrainId) {
+                alert('没有可用的训练任务');
+                return;
+            }
+            
+            fetch(`/api/train_status/${currentTrainId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const statusInfo = data.data;
+                    document.getElementById('trainStatus').textContent = getStatusText(statusInfo.status);
+                    
+                    // 根据状态更新UI
+                    if (statusInfo.status === 'completed') {
+                        startTrainingBtn.disabled = true;
+                        startTrainingBtn.textContent = '训练已完成';
+                        document.getElementById('endTime').textContent = formatDateTime(statusInfo.endTime);
+                        document.getElementById('checkpointDir').textContent = statusInfo.checkpointDir;
+                        document.getElementById('successInfo').style.display = 'block';
+                        document.getElementById('errorInfo').style.display = 'none';
+                    } else if (statusInfo.status === 'failed') {
+                        startTrainingBtn.disabled = false;
+                        startTrainingBtn.textContent = '重新训练';
+                        document.getElementById('errorMessage').textContent = statusInfo.error;
+                        document.getElementById('errorInfo').style.display = 'block';
+                        document.getElementById('successInfo').style.display = 'none';
+                    } else if (statusInfo.status === 'training') {
+                        startTrainingBtn.disabled = true;
+                        startTrainingBtn.textContent = '训练进行中';
+                        document.getElementById('errorInfo').style.display = 'none';
+                        document.getElementById('successInfo').style.display = 'none';
+                    } else {
+                        startTrainingBtn.disabled = false;
+                        startTrainingBtn.textContent = '开始训练';
+                        document.getElementById('errorInfo').style.display = 'none';
+                        document.getElementById('successInfo').style.display = 'none';
+                    }
+                } else {
+                    alert('获取训练状态失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('获取训练状态失败：网络错误');
+            });
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'uploaded': '已上传',
+                'training': '训练中',
+                'completed': '已完成',
+                'failed': '失败'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 格式化日期时间
+        function formatDateTime(isoString) {
+            if (!isoString) return '';
+            const date = new Date(isoString);
+            return date.toLocaleString('zh-CN');
+        }
+    </script>
+</body>
+</html>
